@@ -2,6 +2,23 @@
 
 This guide is my attempt to explain how an Express server works, using *plain* English and an attempt at *real-world* analogies.
 
+## 📖 Table of Contents
+
+1. [What is Express?](#what-is-express)
+2. [Why Do We Need Express?](#why-do-we-need-express)
+3. [Common Terminology](#common-terminology)
+4. [The Request-Response Cycle](#the-request-response-cycle)
+5. [Real Code Example](#real-code-example)
+    - [GET /users](#1-browser-sends-request)
+    - [Controller Code](#controller-processes)
+6. [Troubleshooting](#troubleshooting)
+7. [Typical Express File Structure](#typical-express-file-structure)
+8. [HTTP Methods Explained](#http-methods-explained)
+9. [Testing with Postman](#testing-with-postman)
+10. [Error Handling](#error-handling)
+11. [Status Codes Cheat Sheet](#status-codes-cheat-sheet)
+12. [Quick Reference Card](#quick-reference-card)
+
 -----
 
 ## 🚪 What is Express?
@@ -325,6 +342,8 @@ console.log('Sending response:', responseData);
 Understanding this cycle makes debugging much easier because you know exactly where to look for problems! 
 
 ----
+
+Now that  we have covered and you hopefully understand HOW requests flow through an Express app, let's see how we organize our code to handle this efficiently:
 
 ## 📂 Typical Express File Structure
 
