@@ -77,6 +77,7 @@ It listens to customer **requests** *(from the browser or app)*, figures out wha
 | **Controller** | Decides how to handle a request | The chef who cooks the dish |
 | **Model** | Defines the data structure & talks to the database | The recipe card in the cookbook |
 | **MongoDB** | A NoSQL database | The kitchen's pantry/storage |
+
 [Back to Top](#📖-table-of-contents)
 
 -----
@@ -113,7 +114,9 @@ Think of every interaction with a web server like a conversation between a custo
 
 ### **The Cycle Repeats!**
 Every click, every page load, every form submission starts this cycle all over again.
+
 [Back to Top](#📖-table-of-contents)
+
 ----
 
 <a id="real-code-example"></a>
