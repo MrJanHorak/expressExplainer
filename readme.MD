@@ -51,43 +51,6 @@ It listens to customer **requests** *(from the browser or app)*, figures out wha
 
 -----
 
-## 📂 Typical Express File Structure
-
-```perl
-my-express-app/
-│
-├── server.js # Main entry point (the restaurant door)
-├── package.json # Dependencies (shopping list)
-├── .env # Secret ingredients (passwords, keys)
-│
-├── routes/ # Routes (the menus)
-│ └── userRoutes.js
-│
-├── controllers/ # Controllers (the chefs)
-│ └── userController.js
-│
-├── models/ # Models (the recipe book)
-│ └── userModel.js
-│
-└── middleware/ # Middleware (the kitchen prep area)
- └── authMiddleware.js
-```
-
-### Here is why we typically use this file structure:
-
-  * **`server.js`** → starts the app.
-  * **`routes/`** → like the restaurant's "menu" (what URLs exist).
-  * **`controllers/`** → the "chef" who cooks up the right response.
-  * **`models/`** → the "recipe" that describes what data looks like in MongoDB.
-  * **`middleware/`** → the kitchen prep steps and helpers.
-  * **`.env`** → secret ingredients (passwords, database URLs, etc.).
-
-### Why this structure?
-
-  * Each part has one job. *(We call it separation of concerns)*.
-  * It's easier to organize, debug, and grow.
-
-
 # 🔄 The Request-Response Cycle
 
 Understanding how web servers communicate is like understanding how a restaurant works. Every interaction follows the same pattern!
@@ -359,7 +322,248 @@ console.log('Sending response:', responseData);
 4. Did the chef cook correctly? (Controller logic issues)
 5. Did the food get delivered? (Response issues)
 
-Understanding this cycle makes debugging much easier because you know exactly where to look for problems! 🔍
+Understanding this cycle makes debugging much easier because you know exactly where to look for problems! 
+
+----
+
+## 📂 Typical Express File Structure
+
+```perl
+my-express-app/
+│
+├── server.js # Main entry point (the restaurant door)
+├── package.json # Dependencies (shopping list)
+├── .env # Secret ingredients (passwords, keys)
+│
+├── routes/ # Routes (the menus)
+│ └── userRoutes.js
+│
+├── controllers/ # Controllers (the chefs)
+│ └── userController.js
+│
+├── models/ # Models (the recipe book)
+│ └── userModel.js
+│
+└── middleware/ # Middleware (the kitchen prep area)
+ └── authMiddleware.js
+```
+
+### Here is why we typically use this file structure:
+
+  * **`server.js`** → starts the app.
+  * **`routes/`** → like the restaurant's "menu" (what URLs exist).
+  * **`controllers/`** → the "chef" who cooks up the right response.
+  * **`models/`** → the "recipe" that describes what data looks like in MongoDB.
+  * **`middleware/`** → the kitchen prep steps and helpers.
+  * **`.env`** → secret ingredients (passwords, database URLs, etc.).
+
+### Why this structure?
+
+  * Each part has one job. *(We call it separation of concerns)*.
+  * It's easier to organize, debug, and grow.
+
+-----
+
+
+# Code Examples
+
+## 📝 Basic Server Example
+
+```js
+// server.js
+const express = require('express');
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.get('/', (req, res) => {
+  res.send('Hello, world!');
+});
+
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});
+```
+
+## Model: userModel.js
+
+```js
+const mongoose = require('mongoose');
+
+const userSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: true
+  },
+  email: {
+    type: String,
+    required: true,
+    unique: true
+  }
+}, {
+  timestamps: true // Adds createdAt and updatedAt automatically
+});
+
+const User = mongoose.model('User', userSchema);
+module.exports = User;
+```
+
+## Controller: userController.js
+
+```js
+const User = require('../models/userModel');
+
+// GET /users
+const getUsers = async (req, res) => {
+  try {
+    const users = await User.find();
+    res.status(200).json(users);
+  } catch (err) {
+    res.status(500).json({ message: 'Server Error', error: err.message });
+  }
+};
+
+// GET /users/:id
+const getUserById = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.status(200).json(user);
+  } catch (err) {
+    res.status(500).json({ message: 'Server Error', error: err.message });
+  }
+};
+
+// POST /users
+const createUser = async (req, res) => {
+  try {
+    const { name, email } = req.body;
+    const newUser = new User({ name, email });
+    const savedUser = await newUser.save();
+    res.status(201).json(savedUser);
+  } catch (err) {
+    if (err.code === 11000) {
+      res.status(400).json({ message: 'Email already exists' });
+    } else {
+      res.status(400).json({ message: 'Bad Request', error: err.message });
+    }
+  }
+};
+
+// PUT /users/:id
+const updateUser = async (req, res) => {
+  try {
+    const { name, email } = req.body;
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.id,
+      { name, email },
+      { new: true, runValidators: true }
+    );
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.status(200).json(updatedUser);
+  } catch (err) {
+    res.status(400).json({ message: 'Bad Request', error: err.message });
+  }
+};
+
+// DELETE /users/:id
+const deleteUser = async (req, res) => {
+  try {
+    const deletedUser = await User.findByIdAndDelete(req.params.id);
+    if (!deletedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.status(204).send();
+  } catch (err) {
+    res.status(500).json({ message: 'Server Error', error: err.message });
+  }
+};
+
+module.exports = { 
+  getUsers, 
+  getUserById, 
+  createUser, 
+  updateUser, 
+  deleteUser 
+};
+```
+
+## Routes: userRoutes.js
+
+```js
+const express = require('express');
+const router = express.Router();
+const { 
+  getUsers, 
+  getUserById, 
+  createUser, 
+  updateUser, 
+  deleteUser 
+} = require('../controllers/userController');
+
+// GET /users - Get all users
+router.get('/', getUsers);
+
+// GET /users/:id - Get single user
+router.get('/:id', getUserById);
+
+// POST /users - Create new user
+router.post('/', createUser);
+
+// PUT /users/:id - Update user
+router.put('/:id', updateUser);
+
+// DELETE /users/:id - Delete user
+router.delete('/:id', deleteUser);
+
+module.exports = router;
+```
+
+## Server: server.js
+
+```js
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+require('dotenv').config();
+
+const userRoutes = require('./routes/userRoutes');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Connect to MongoDB
+mongoose.connect(process.env.DATABASE_URL || 'mongodb://localhost:27017/bootcampDB', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
+
+// Middleware
+app.use(express.json()); // Parse JSON bodies
+app.use(cors()); // Enable CORS for all routes
+
+// Logging middleware
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path} - ${new Date()}`);
+  next();
+});
+
+// Routes
+app.use('/users', userRoutes);
+
+// Basic route
+app.get('/', (req, res) => {
+  res.json({ message: 'Welcome to our Express + MongoDB API!' });
+});
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server running at http://localhost:${PORT}`);
+});
+```
 
 -----
 ## 🔐 Environment Variables (.env files)
@@ -802,211 +1006,3 @@ app.get('/users/:id', handler); // This catches everything else
   * **Postman** = remote control for testing the restaurant
 
 Remember: Every successful restaurant needs organization, and every successful Express app needs good structure. Start simple, keep things organized, and your code will be as smooth as a well-run kitchen\! 🍳
-
-
-
-----------------------------------------------
-
-work in progress:
-
-## 📝 Basic Server Example
-
-```js
-// server.js
-const express = require('express');
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-app.get('/', (req, res) => {
-  res.send('Hello, world!');
-});
-
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
-```
-
-
-
-# Code Examples
-
-## Model: userModel.js
-
-```js
-const mongoose = require('mongoose');
-
-const userSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true
-  },
-  email: {
-    type: String,
-    required: true,
-    unique: true
-  }
-}, {
-  timestamps: true // Adds createdAt and updatedAt automatically
-});
-
-const User = mongoose.model('User', userSchema);
-module.exports = User;
-```
-
-## Controller: userController.js
-
-```js
-const User = require('../models/userModel');
-
-// GET /users
-const getUsers = async (req, res) => {
-  try {
-    const users = await User.find();
-    res.status(200).json(users);
-  } catch (err) {
-    res.status(500).json({ message: 'Server Error', error: err.message });
-  }
-};
-
-// GET /users/:id
-const getUserById = async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    res.status(200).json(user);
-  } catch (err) {
-    res.status(500).json({ message: 'Server Error', error: err.message });
-  }
-};
-
-// POST /users
-const createUser = async (req, res) => {
-  try {
-    const { name, email } = req.body;
-    const newUser = new User({ name, email });
-    const savedUser = await newUser.save();
-    res.status(201).json(savedUser);
-  } catch (err) {
-    if (err.code === 11000) {
-      res.status(400).json({ message: 'Email already exists' });
-    } else {
-      res.status(400).json({ message: 'Bad Request', error: err.message });
-    }
-  }
-};
-
-// PUT /users/:id
-const updateUser = async (req, res) => {
-  try {
-    const { name, email } = req.body;
-    const updatedUser = await User.findByIdAndUpdate(
-      req.params.id,
-      { name, email },
-      { new: true, runValidators: true }
-    );
-    if (!updatedUser) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    res.status(200).json(updatedUser);
-  } catch (err) {
-    res.status(400).json({ message: 'Bad Request', error: err.message });
-  }
-};
-
-// DELETE /users/:id
-const deleteUser = async (req, res) => {
-  try {
-    const deletedUser = await User.findByIdAndDelete(req.params.id);
-    if (!deletedUser) {
-      return res.status(404).json({ message: 'User not found' });
-    }
-    res.status(204).send();
-  } catch (err) {
-    res.status(500).json({ message: 'Server Error', error: err.message });
-  }
-};
-
-module.exports = { 
-  getUsers, 
-  getUserById, 
-  createUser, 
-  updateUser, 
-  deleteUser 
-};
-```
-
-## Routes: userRoutes.js
-
-```js
-const express = require('express');
-const router = express.Router();
-const { 
-  getUsers, 
-  getUserById, 
-  createUser, 
-  updateUser, 
-  deleteUser 
-} = require('../controllers/userController');
-
-// GET /users - Get all users
-router.get('/', getUsers);
-
-// GET /users/:id - Get single user
-router.get('/:id', getUserById);
-
-// POST /users - Create new user
-router.post('/', createUser);
-
-// PUT /users/:id - Update user
-router.put('/:id', updateUser);
-
-// DELETE /users/:id - Delete user
-router.delete('/:id', deleteUser);
-
-module.exports = router;
-```
-
-## Server: server.js
-
-```js
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-require('dotenv').config();
-
-const userRoutes = require('./routes/userRoutes');
-
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-// Connect to MongoDB
-mongoose.connect(process.env.DATABASE_URL || 'mongodb://localhost:27017/bootcampDB', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-});
-
-// Middleware
-app.use(express.json()); // Parse JSON bodies
-app.use(cors()); // Enable CORS for all routes
-
-// Logging middleware
-app.use((req, res, next) => {
-  console.log(`${req.method} ${req.path} - ${new Date()}`);
-  next();
-});
-
-// Routes
-app.use('/users', userRoutes);
-
-// Basic route
-app.get('/', (req, res) => {
-  res.json({ message: 'Welcome to our Express + MongoDB API!' });
-});
-
-// Start server
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
-});
-```
